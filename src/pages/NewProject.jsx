@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../api"; // ✅ Uses shared Axios instance
 
 const NewProject = () => {
   const navigate = useNavigate();
@@ -17,8 +17,8 @@ const NewProject = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5050/api/projects", form);
-      navigate("/dashboard"); // or navigate("/projects")
+      await API.post("/projects", form); // ✅ uses relative path
+      navigate("/dashboard");
     } catch (err) {
       console.error("Error creating project:", err);
       alert("Failed to create project");

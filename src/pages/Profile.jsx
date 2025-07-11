@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Settings, LogOut, ArrowLeft } from "lucide-react";
-import API from "../api"; // Axios instance
-import axios from "axios";
+import API from "../api"; // ✅ uses shared axios instance
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", profilePic: "", profilePicFile: null });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    profilePic: "",
+    profilePicFile: null,
+  });
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,7 +67,7 @@ const Profile = () => {
         formDataToSend.append("profilePic", formData.profilePicFile);
       }
 
-      const res = await axios.put("http://localhost:5050/api/auth/profile", formDataToSend, {
+      const res = await API.put("/auth/profile", formDataToSend, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -118,7 +123,6 @@ const Profile = () => {
 
         {editMode && (
           <div className="space-y-4">
-            {/* Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Name
@@ -132,7 +136,6 @@ const Profile = () => {
               />
             </div>
 
-            {/* Email Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email
@@ -146,7 +149,6 @@ const Profile = () => {
               />
             </div>
 
-            {/* Upload Profile Pic */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Profile Picture
@@ -162,7 +164,6 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mt-6">
           {editMode ? (
             <>

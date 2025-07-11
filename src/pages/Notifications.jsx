@@ -2,29 +2,39 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { io } from "socket.io-client";
+import API from "../api";
 
-const socket = io("http://localhost:5050"); // ✅ move outside component to avoid multiple connections
+// ✅ WebSocket connection (update to deployed URL)
+const socket = io("https://task-manager-backend-tpl6.onrender.com");
 
 const Notifications = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch("/api/notifications");
-        const data = await res.json();
-        setNotifications(data);
+        const res = await API.get("/notifications", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setNotifications(res.data);
 
-        // ✅ Clear notifications when user visits the page
-        await fetch("/api/notifications/clear", { method: "DELETE" });
+        // ✅ Clear notifications on page visit
+        await API.delete("/notifications/clear", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       } catch (err) {
         console.error("Error fetching notifications", err);
       }
     };
 
     fetchNotifications();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     socket.on("notification", (note) => {
@@ -44,6 +54,19 @@ const Notifications = () => {
         return "⚠️";
       default:
         return "🔔";
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await API.delete("/notifications/clear", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setNotifications([]);
+    } catch (err) {
+      console.error("Failed to clear notifications", err);
     }
   };
 
@@ -80,10 +103,7 @@ const Notifications = () => {
         </button>
 
         <button
-          onClick={async () => {
-            await fetch("/api/notifications/clear", { method: "DELETE" });
-            setNotifications([]);
-          }}
+          onClick={handleClearAll}
           className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
         >
           Clear All Notifications

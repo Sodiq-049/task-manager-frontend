@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import SearchBar from "./SearchBar";
 import { io } from "socket.io-client";
+import API from "../api"; // ✅ Your configured Axios instance
 import {
   User,
   LogOut,
@@ -11,8 +11,8 @@ import {
   Bell,
 } from "lucide-react";
 
-// 🔌 Setup WebSocket
-const socket = io("http://localhost:5050");
+// ✅ WebSocket connection to production backend
+const socket = io("https://task-manager-backend-tpl6.onrender.com");
 
 const Topbar = () => {
   const [open, setOpen] = useState(false);
@@ -25,45 +25,35 @@ const Topbar = () => {
 
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-
   const token = localStorage.getItem("token");
 
-    const fetchUser = async () => {
-    try {
-        const res = await axios.get("/api/auth/profile", {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                },
-            });
-            setUser(res.data);
-        } catch (err) {
-            console.error("❌ Failed to fetch profile", err);
-        }
-    };
-
-
-  // Fetch user info
+  // ✅ Fetch user profile
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get("/api/auth/profile");
-        setUser(res.data);
-      } catch {
-        setUser({
-          name: "Guest User",
-          role: "Admin",
-          email: "guest@example.com",
+        const res = await API.get("/auth/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+        setUser(res.data);
+      } catch (err) {
+        console.error("❌ Failed to fetch profile", err);
       }
     };
-    fetchUser();
-  }, []);
 
-  // Notifications
+    fetchUser();
+  }, [token]);
+
+  // ✅ Fetch and listen for notifications
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const res = await axios.get("/api/notifications");
+        const res = await API.get("/notifications", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setNotificationCount(res.data.length);
       } catch (err) {
         console.error("Error fetching notifications:", err);
@@ -71,18 +61,19 @@ const Topbar = () => {
     };
 
     fetchCount();
-    const interval = setInterval(fetchCount, 15000);
-    socket.on("notification", () =>
-      setNotificationCount((prev) => prev + 1)
-    );
+    const interval = setInterval(fetchCount, 15000); // refresh every 15s
+
+    socket.on("notification", () => {
+      setNotificationCount((prev) => prev + 1);
+    });
 
     return () => {
       clearInterval(interval);
       socket.off("notification");
     };
-  }, []);
+  }, [token]);
 
-  // Close dropdown on outside click
+  // ✅ Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {

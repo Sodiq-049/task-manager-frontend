@@ -9,8 +9,8 @@ import {
   Bell,
   FolderPlus,
 } from "lucide-react";
-import axios from "axios";
-import SearchBar from "./SearchBar"; // ✅ Correct reusable component
+import API from "../api"; // ✅ Using your configured Axios instance
+import SearchBar from "./SearchBar";
 
 const Sidebar = () => {
   const [projects, setProjects] = useState([]);
@@ -18,7 +18,12 @@ const Sidebar = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await axios.get("http://localhost:5050/api/projects");
+        const token = localStorage.getItem("token");
+        const res = await API.get("/projects", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setProjects(res.data);
       } catch (err) {
         console.error("Error fetching projects:", err);
@@ -32,7 +37,7 @@ const Sidebar = () => {
     <div className="w-64 bg-gray-900 text-white min-h-screen p-6 flex flex-col space-y-4">
       <h1 className="text-2xl font-bold mb-6">TaskFlow</h1>
 
-      {/* ✅ Proper Compact Search bar with icon
+      {/* Compact search bar placeholder (optional)
       <SearchBar compact /> */}
 
       <nav className="space-y-4 flex-1">
@@ -57,7 +62,7 @@ const Sidebar = () => {
           <span>Notifications</span>
         </Link>
 
-        {/* Projects Header */}
+        {/* Projects Section */}
         <div className="flex items-center justify-between mt-4 text-sm text-gray-300">
           <span className="uppercase tracking-wide">Projects</span>
           <Link to="/projects/new">
@@ -83,7 +88,7 @@ const Sidebar = () => {
         </div>
       </nav>
 
-      {/* Settings at bottom */}
+      {/* Settings Link */}
       <Link className="flex items-center space-x-2 hover:text-blue-400" to="/settings">
         <Settings size={20} />
         <span>Settings</span>

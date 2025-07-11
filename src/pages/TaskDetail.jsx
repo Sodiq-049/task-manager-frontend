@@ -1,208 +1,213 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Pencil, Settings, LogOut, ArrowLeft } from "lucide-react";
+import API from "../api"; // Axios instance
 import axios from "axios";
 
-const TaskDetail = () => {
-  const { taskId } = useParams();
+const Profile = () => {
+  const [user, setUser] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", profilePic: "", profilePicFile: null });
   const navigate = useNavigate();
-  const [task, setTask] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({});
 
   useEffect(() => {
-    const fetchTask = async () => {
+    const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5050/api/tasks/${taskId}`);
-        setTask(res.data);
-        setForm(res.data);
+        const token = localStorage.getItem("token");
+        const res = await API.get("/auth/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUser(res.data);
+        setFormData({
+          name: res.data.name,
+          email: res.data.email,
+          profilePic: res.data.profilePic || "",
+          profilePicFile: null,
+        });
       } catch (err) {
-        console.error("Failed to load task:", err);
+        console.error("Failed to fetch user profile", err);
       }
     };
 
-    fetchTask();
-  }, [taskId]);
+    fetchUser();
+  }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
-  const handleUpdate = async () => {
+  const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "profilePic") {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData({ ...formData, profilePic: reader.result, profilePicFile: files[0] });
+      };
+      reader.readAsDataURL(files[0]);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleSave = async () => {
     try {
-      await axios.put(`http://localhost:5050/api/tasks/${taskId}`, form);
-      setIsEditing(false);
-      setTask(form);
-    } catch (err) {
-      console.error("Failed to update task:", err);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
-      try {
-        await axios.delete(`http://localhost:5050/api/tasks/${taskId}`);
-        navigate("/dashboard");
-      } catch (err) {
-        console.error("Failed to delete task:", err);
+      const token = localStorage.getItem("token");
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("email", formData.email);
+      if (formData.profilePicFile) {
+        formDataToSend.append("profilePic", formData.profilePicFile);
       }
+
+      const res = await axios.put("http://localhost:5050/api/auth/profile", formDataToSend, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setUser(res.data);
+      setEditMode(false);
+      alert("✅ Profile updated successfully!");
+    } catch (err) {
+      alert("❌ Update failed");
+      console.error("Update error", err);
     }
   };
 
-  if (!task) return <p className="p-6">Loading task...</p>;
+  if (!user)
+    return (
+      <div className="flex justify-center items-center h-screen text-gray-600 dark:text-gray-300">
+        Loading profile...
+      </div>
+    );
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-6">
-      <h2 className="text-2xl font-bold mb-4">Task Details</h2>
-
-      <div className="space-y-4">
-        <div>
-          <label className="font-medium">Title</label>
-          {isEditing ? (
-            <input
-              type="text"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-            />
-          ) : (
-            <p>{task.title}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="font-medium">Description</label>
-          {isEditing ? (
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-            />
-          ) : (
-            <p>{task.description}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="font-medium">Priority</label>
-            {isEditing ? (
-              <select
-                name="priority"
-                value={form.priority}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-            ) : (
-              <p>{task.priority}</p>
-            )}
-          </div>
-          <div>
-            <label className="font-medium">Status</label>
-            {isEditing ? (
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option>To Do</option>
-                <option>In Progress</option>
-                <option>Completed</option>
-              </select>
-            ) : (
-              <p>{task.status}</p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="font-medium">Assignee</label>
-          {isEditing ? (
-            <input
-              type="text"
-              name="assignee"
-              value={form.assignee}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-            />
-          ) : (
-            <p>{task.assignee}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="font-medium">Due Date</label>
-          {isEditing ? (
-            <input
-              type="date"
-              name="dueDate"
-              value={form.dueDate?.substring(0, 10)}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-            />
-          ) : (
-            <p>{new Date(task.dueDate).toLocaleDateString()}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="font-medium">Tags</label>
-          {isEditing ? (
-            <input
-              type="text"
-              name="tags"
-              value={form.tags?.join(", ")}
-              onChange={(e) =>
-                setForm({ ...form, tags: e.target.value.split(",").map((tag) => tag.trim()) })
-              }
-              className="w-full border rounded px-3 py-2"
-            />
-          ) : (
-            <p>{task.tags?.join(", ")}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex justify-between mt-6">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 px-4 py-10">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-900 text-gray-800 dark:text-white rounded-xl shadow-lg p-8">
+        {/* Back to Dashboard */}
         <button
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           onClick={() => navigate("/dashboard")}
+          className="mb-6 flex items-center gap-2 text-sm text-blue-600 hover:underline"
         >
-          Back
+          <ArrowLeft size={16} />
+          Back to Dashboard
         </button>
 
-        <div className="space-x-2">
-          {isEditing ? (
-            <button
-              onClick={handleUpdate}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Save Changes
-            </button>
+        <div className="flex items-center gap-6 mb-6">
+          <img
+            src={formData.profilePic || "https://via.placeholder.com/100"}
+            alt="Profile"
+            className="w-24 h-24 rounded-full border border-gray-300 dark:border-gray-700 object-cover"
+          />
+          <div>
+            {!editMode ? (
+              <>
+                <h2 className="text-2xl font-bold">{user.name}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+              </>
+            ) : null}
+            <span className="text-xs inline-block mt-2 bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 px-2 py-1 rounded">
+              {user.role}
+            </span>
+          </div>
+        </div>
+
+        {editMode && (
+          <div className="space-y-4">
+            {/* Name Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            {/* Email Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            {/* Upload Profile Pic */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Profile Picture
+              </label>
+              <input
+                type="file"
+                name="profilePic"
+                accept="image/*"
+                onChange={handleInputChange}
+                className="mt-1 text-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4 mt-6">
+          {editMode ? (
+            <>
+              <button
+                onClick={handleSave}
+                className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => setEditMode(false)}
+                className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              >
+                Cancel
+              </button>
+            </>
           ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            >
-              Edit Task
-            </button>
+            <>
+              <button
+                onClick={() => navigate("/settings")}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                <Settings size={18} />
+                Settings
+              </button>
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 px-5 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              >
+                <Pencil size={18} />
+                Edit Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-5 py-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 rounded transition"
+              >
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </>
           )}
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Delete Task
-          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default TaskDetail;
+export default Profile;

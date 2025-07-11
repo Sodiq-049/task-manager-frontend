@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Calendar as BigCalendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import API from "../api"; // ✅ Use shared axios instance
 
 const locales = {
   "en-US": require("date-fns/locale/en-US"),
@@ -25,7 +25,7 @@ const CalendarPage = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await axios.get("http://localhost:5050/api/tasks");
+        const res = await API.get("/tasks"); // ✅ Updated
         const taskEvents = res.data.map((task) => ({
           id: task._id,
           title: task.title,
@@ -55,8 +55,8 @@ const CalendarPage = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:5050/api/tasks/${selectedTask.id}`);
-      setEvents(events.filter(e => e.id !== selectedTask.id));
+      await API.delete(`/tasks/${selectedTask.id}`); // ✅ Updated
+      setEvents(events.filter((e) => e.id !== selectedTask.id));
       handleCloseModal();
     } catch (err) {
       console.error("Error deleting task:", err);
@@ -96,7 +96,6 @@ const CalendarPage = () => {
         eventPropGetter={getEventStyle}
       />
 
-      {/* Modal */}
       {selectedTask && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white p-6 rounded shadow-lg w-96 relative">
