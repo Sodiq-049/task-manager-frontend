@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { io } from "socket.io-client";
 import API from "../api";
 
-// ✅ WebSocket connection (update to deployed URL)
 const socket = io("https://task-manager-backend-tpl6.onrender.com");
 
 const Notifications = () => {
@@ -12,22 +11,14 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const token = localStorage.getItem("token");
 
+  // Fetch notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const res = await API.get("/notifications", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         setNotifications(res.data);
-
-        // ✅ Clear notifications on page visit
-        await API.delete("/notifications/clear", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
       } catch (err) {
         console.error("Error fetching notifications", err);
       }
@@ -36,6 +27,7 @@ const Notifications = () => {
     fetchNotifications();
   }, [token]);
 
+  // WebSocket live updates
   useEffect(() => {
     socket.on("notification", (note) => {
       setNotifications((prev) => [...prev, note]);
@@ -46,23 +38,30 @@ const Notifications = () => {
 
   const renderIcon = (type) => {
     switch (type) {
-      case "success":
-        return "✅";
-      case "comment":
-        return "🗨️";
-      case "warning":
-        return "⚠️";
-      default:
-        return "🔔";
+      case "success": return "✅";
+      case "comment": return "🗨️";
+      case "warning": return "⚠️";
+      default: return "🔔";
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await API.put(`/notifications/${id}/read`, null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, read: true } : n))
+      );
+    } catch (err) {
+      console.error("Failed to mark as read", err);
     }
   };
 
   const handleClearAll = async () => {
     try {
       await API.delete("/notifications/clear", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications([]);
     } catch (err) {
@@ -86,7 +85,13 @@ const Notifications = () => {
       ) : (
         <ul className="bg-white rounded-lg shadow divide-y">
           {notifications.map((note) => (
-            <li key={note._id || note.id} className="p-4 flex items-center gap-3">
+            <li
+              key={note._id}
+              onClick={() => markAsRead(note._id)}
+              className={`p-4 flex items-center gap-3 cursor-pointer ${
+                note.read ? "opacity-60" : ""
+              }`}
+            >
               <span className="text-xl">{renderIcon(note.type)}</span>
               <span className="text-gray-800">{note.message}</span>
             </li>
