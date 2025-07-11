@@ -63,14 +63,14 @@ export default function Register() {
             name="email"
             type="email"
             placeholder="Email address"
-            className="w-full border border-gray-300 px-4 py-2 rounded-md"
+            className="w-full border border-gray-300 px-4 py-2 rounded-md dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={handleChange}
           />
           <input
             name="password"
             type="password"
             placeholder="Password"
-            className="w-full border border-gray-300 px-4 py-2 rounded-md"
+            className="w-full border border-gray-300 px-4 py-2 rounded-md dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={handleChange}
           />
           <input
