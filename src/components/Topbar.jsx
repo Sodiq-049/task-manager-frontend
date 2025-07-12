@@ -9,11 +9,13 @@ import {
   Settings as SettingsIcon,
   UserCircle,
   Bell,
+  Menu,
 } from "lucide-react";
 
+// WebSocket connection
 const socket = io("https://task-manager-backend-tpl6.onrender.com");
 
-const Topbar = () => {
+const Topbar = ({ onToggleSidebar }) => {
   const [open, setOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [user, setUser] = useState({
@@ -40,7 +42,6 @@ const Topbar = () => {
         console.error("❌ Failed to fetch profile", err);
       }
     };
-
     fetchUser();
   }, [token]);
 
@@ -60,7 +61,7 @@ const Topbar = () => {
     };
 
     fetchUnread();
-    const interval = setInterval(fetchUnread, 10000); // poll every 10s
+    const interval = setInterval(fetchUnread, 10000);
     socket.on("notification", fetchUnread);
 
     return () => {
@@ -69,7 +70,7 @@ const Topbar = () => {
     };
   }, [token]);
 
-  // Close dropdown on outside click
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -87,12 +88,23 @@ const Topbar = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white shadow px-4 py-3 flex items-center justify-between transition-colors duration-300">
-      <h2 className="text-lg font-bold">Task Manager</h2>
+      {/* Sidebar toggle on mobile */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={onToggleSidebar}
+          className="lg:hidden text-gray-600 dark:text-white"
+        >
+          <Menu size={24} />
+        </button>
+        <h2 className="text-lg font-bold">Task Manager</h2>
+      </div>
 
-      <div className="hidden sm:flex items-center justify-center flex-1">
+      {/* Search bar */}
+      <div className="hidden sm:flex flex-1 justify-center">
         <SearchBar />
       </div>
 
+      {/* Right section: Notification + User */}
       <div className="flex items-center space-x-4" ref={dropdownRef}>
         <Link
           to="/notifications"
@@ -106,16 +118,17 @@ const Topbar = () => {
           )}
         </Link>
 
+        {/* User dropdown */}
         <div className="relative">
           <button
             onClick={() => setOpen(!open)}
-            className="flex flex-col items-start px-3 py-1.5 border border-blue-500 rounded-md text-gray-700 dark:text-white hover:text-blue-500"
+            className="flex items-center gap-2 px-3 py-1.5 border border-blue-500 rounded-md text-gray-700 dark:text-white hover:text-blue-500"
           >
-            <div className="flex items-center space-x-2">
-              <User size={18} />
+            <User size={18} className="lg:hidden" />
+            <div className="hidden lg:flex flex-col items-start text-left">
               <span className="text-sm">{user.name}</span>
+              <span className="text-xs text-gray-400">{user.role}</span>
             </div>
-            <span className="text-xs text-gray-400">{user.role}</span>
           </button>
 
           {open && (
@@ -127,19 +140,28 @@ const Topbar = () => {
               </div>
               <ul className="text-sm">
                 <li>
-                  <button onClick={() => navigate("/profile")} className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     <UserCircle size={16} className="mr-2" />
                     Profile
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => navigate("/settings")} className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <button
+                    onClick={() => navigate("/settings")}
+                    className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     <SettingsIcon size={16} className="mr-2" />
                     Settings
                   </button>
                 </li>
                 <li>
-                  <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     <LogOut size={16} className="mr-2" />
                     Log out
                   </button>
